@@ -16,6 +16,12 @@ network:
   #Eg. name: baf
   name:
 
+  #Provide the docker username and password
+  #Eg. username: your-uname,  password: your-pwd
+  docker:
+    username: 
+    password: 
+
   #Provide the kubernetes host url
   #Eg. kubernetes_url: https://10.3.8.5:6443
   kubernetes_url:

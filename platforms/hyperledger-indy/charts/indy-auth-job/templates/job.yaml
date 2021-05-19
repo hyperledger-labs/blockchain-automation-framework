@@ -11,7 +11,9 @@ spec:
     spec:
       restartPolicy: OnFailure
       imagePullSecrets:
-        - name: "{{ $.Values.image.pullSecret }}"
+        {{ if and (ne $.Values.network.docker.password '') (ne $.Values.network.docker.username '') }}
+          - name: "{{ $.Values.image.pullSecret }}"
+        {{ end }}        
       serviceAccountName: {{ $.Values.account.admin_service }}
       containers:
         - name:  "{{ $.Values.image.name }}"

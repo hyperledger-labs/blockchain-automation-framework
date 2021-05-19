@@ -304,7 +304,9 @@ spec:
               subPath: pool_transactions_genesis
 {{- end }}              
       imagePullSecrets:
-        - name: "{{ $.Values.image.pullSecret }}"
+        {{ if and (ne $.Values.network.docker.password '') (ne $.Values.network.docker.username '') }}
+          - name: "{{ $.Values.image.pullSecret }}"
+        {{ end }}
       volumes:
         - name: {{ $.Values.metadata.name }}-config
           configMap:

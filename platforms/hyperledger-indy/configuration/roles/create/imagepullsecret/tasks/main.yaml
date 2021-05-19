@@ -7,6 +7,7 @@
   vars:
     component_name: "{{ component_ns }}"
     check: "docker_credentials"
+  when: (network.docker.username | default('', true) | trim != '') and (network.docker.password | default('', true) | trim != '')  
 
 - name: "register the result of docker cred check"
   set_fact:
@@ -15,4 +16,4 @@
 - name: Create the docker pull registry secret for {{ component_ns }}
   shell: |
     KUBECONFIG={{ kubernetes.config_file }} kubectl create secret -n {{ component_ns }} docker-registry regcred --docker-server={{ network.docker.url }} --docker-username={{ network.docker.username }} --docker-password={{ network.docker.password }} --docker-email="test@abc.mail"
-  when: secret_present.resources|length == 0
+  when: (secret_present.resources|length == 0) and (network.docker.username | default('', true) | trim != '') and (network.docker.password | default('', true) | trim != '')

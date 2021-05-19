@@ -16,6 +16,12 @@ network:
   #Eg. name: baf
   name: 
 
+  #Provide the docker username and password
+  #Eg. username: your-uname,  password: your-pwd
+  docker:
+    username: 
+    password: 
+
 genesis:
   type:
   pool:

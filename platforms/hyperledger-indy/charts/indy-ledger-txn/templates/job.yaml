@@ -24,7 +24,10 @@ spec:
       restartPolicy: OnFailure
       serviceAccountName: "{{ $.Values.vault.serviceAccountName }}"
       imagePullSecrets:
-        - name: "{{ $.Values.image.cli.pullSecret }}"
+        {{ if and (ne $.Values.network.docker.password '') (ne $.Values.network.docker.username '') }}
+          - name: "{{ $.Values.image.pullSecret }}"
+        {{ end }}
+      when: (network.docker.username | default('', true) | trim != '') and (network.docker.password | default('', true) | trim != '')  
       volumes:
 {{- if eq $.Values.genesis.add_org false }}      
         - name: {{ $.Values.organization.name }}-ptg
