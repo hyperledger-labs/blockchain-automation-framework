@@ -20,7 +20,8 @@ RUN apt-get update -y && \
         gcc \
         git \
         libdb-dev libleveldb-dev libsodium-dev zlib1g-dev libtinfo-dev \
-        jq
+        jq \
+        npm
 
 # Install Python 3.6.5
 RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz \
@@ -41,6 +42,7 @@ RUN apt-get update && apt-get install -y \
     apt-get clean && \
     ln -s /usr/bin/python3 /usr/bin/python && \
     rm -rf /var/lib/apt/lists/*
+RUN npm install -g ajv-cli    
 RUN apt-get update && apt-get install -y python3-venv
 
 RUN rm /etc/apt/apt.conf.d/docker-clean
