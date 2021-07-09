@@ -8,17 +8,17 @@
           "type": "object",
           "properties": {
               "type": { "type": "string", "enum": ["fabric","corda", "corda-enterprise", "indy"],"description": "Network type"},
-              "env": { "$ref":"/schemas/shared_environment"},
-              "docker": { "$ref":"/schemas/shared_docker"}
+              "env": { "$ref":"#/definitions/shared_environment"},
+              "docker": { "$ref":"#/definitions/shared_docker"}
           },
           "allOf":[
             {"if": {"properties": { "type": { "const": "corda" } } },
              "then": {
               "properties":{
-                "version":{ "type": "number","enum":[4.1,4.4,4.7]},
+                "version":{ "type": "number","enum":[4.4,4.7]},
                 "frontend": { "type": "string", "enum": ["enabled","disabled"]},
-                "network_services": { "type":"array","items":{ "$ref":"/schemas/corda_network_service"}},
-                "organizations": { "type":"array","minItems": 1,"items":{"$ref":"/schemas/corda_organization"}}      
+                "network_services": { "type":"array","items":{ "$ref":"#/definitions/corda_network_service"}},
+                "organizations": { "type":"array","minItems": 1,"items":{"$ref":"#/definitions/corda_organization"}}      
                }
              }
             }               
@@ -31,7 +31,6 @@
 
     "definitions": { 
         "shared_environment":{
-            "$id": "/schemas/shared_environment",
             "type": "object",
             "properties": {
               "type": { "type": "string","pattern": "^[A-Za-z0-9-]{1,10}$"},
@@ -42,17 +41,15 @@
             "required": [ "type","proxy","external_dns","retry_count" ]
         },             
         "shared_docker":{
-            "$id": "/schemas/shared_docker",
             "type": "object",
             "properties": {
-              "url": { "type": "string","pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?:/[a-z0-9-]{0,61})?$"},
+              "url": { "type": "string","pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?:\\:[0-9]{2,5})?(?:\/[a-z0-9-]{1,61})*$"},
               "username": { "type": "string","pattern":"^[a-zA-Z0-9._]+$"},
               "password": {"type": "string"}
              },
             "required": [ "url","username","password"]
         },                                 
         "shared_k8s":{
-          "$id": "/schemas/shared_k8s",
           "type": "object",
           "properties": {
             "provider": { "type": "string","enum": ["aws", "azure","gcp","minikube"]},
@@ -64,7 +61,6 @@
           "additionalProperties": false
         },
         "shared_aws":{
-          "$id": "/schemas/shared_aws",
           "type": "object",
           "properties": {
             "access_key": { "type": "string","pattern": "^[A-Za-z0-9]{20}$"},
@@ -76,7 +72,6 @@
           "additionalProperties": false
         },        
         "shared_vault":{
-          "$id": "/schemas/shared_vault",
           "type": "object",
           "properties": {
             "url": { "type": "string"},
@@ -87,7 +82,6 @@
           "additionalProperties": false
         },  
         "shared_gitops":{
-          "$id": "/schemas/shared_gitops",
           "type": "object",
           "properties": {
             "git_protocol": { "type": "string","enum": ["https", "ssh"]},
@@ -105,7 +99,6 @@
           "additionalProperties": false
         }, 
         "corda_network_service":{
-          "$id": "/schemas/corda_network_service",
           "type": "object",
           "properties": {
             "type": { "type": "string", "enum": ["doorman", "networkmap"]},   
@@ -115,13 +108,12 @@
           "required": [ "type","uri","certificate"]
         },         
         "corda_organization":{
-          "$id": "/schemas/corda_organization",
           "type": "object",
           "properties": {
-            "k8s":{ "$ref":"/schemas/shared_k8s"},
-            "vault":{ "$ref":"/schemas/shared_vault"},
-            "gitops":{ "$ref":"/schemas/shared_gitops"},
-            "aws":{ "$ref":"/schemas/shared_aws"},
+            "k8s":{ "$ref":"#/definitions/shared_k8s"},
+            "vault":{ "$ref":"#/definitions/shared_vault"},
+            "gitops":{ "$ref":"#/definitions/shared_gitops"},
+            "aws":{ "$ref":"#/definitions/shared_aws"},
             "name": { "type": "string","pattern": "^[A-Za-z0-9-]{1,30}$"},
             "type": { "type": "string","pattern": "^[A-Za-z0-9-]{1,30}$"},
             "country": { "type": "string"},
@@ -129,22 +121,20 @@
             "location": { "type": "string"}, 
             "subject":  { "type": "string"},    
             "external_url_suffix":  { "type": "string"},
-            "services":{ "$ref":"/schemas/corda_node_service"}
+            "services":{ "$ref":"#/definitions/corda_node_service"}
             },
           "required": [ "name","type","country","state","location","subject","external_url_suffix","services"]
         },  
         "corda_node_service":{
-          "$id": "/schemas/corda_node_service",
           "type": "object",
           "properties": {
-            "doorman": { "$ref":"/schemas/corda_service_doorman_nms"},
-            "nms": { "$ref":"/schemas/corda_service_doorman_nms"},
-            "notary": { "$ref":"/schemas/corda_service_notary"},
-            "peers": {  "type":"array","items":{ "$ref":"/schemas/corda_service_peer"}}
+            "doorman": { "$ref":"#/definitions/corda_service_doorman_nms"},
+            "nms": { "$ref":"#/definitions/corda_service_doorman_nms"},
+            "notary": { "$ref":"#/definitions/corda_service_notary"},
+            "peers": {  "type":"array","items":{ "$ref":"#/definitions/corda_service_peer"}}
             }
         },  
         "corda_service_doorman_nms":{
-          "$id": "/schemas/corda_service_doorman_nms",
           "type": "object",
           "properties": {
             "name": { "type": "string"},
@@ -152,11 +142,10 @@
             "db_subject": { "type": "string"},
             "type":{ "type": "string","enum": ["doorman","networkmap"]},
             "tls": { "type": "string","enum": ["on","off"]},       
-            "ports":{ "$ref":"/schemas/corda_service_port_doorman"}
+            "ports":{ "$ref":"#/definitions/corda_service_port_doorman"}
             }
         },
         "corda_service_notary":{
-          "$id": "/schemas/corda_service_notary",
           "type": "object",
           "properties": {
             "name": { "type": "string"},
@@ -164,15 +153,14 @@
             "db_subject": { "type": "string"},
             "type":{ "type": "string","enum": ["notary"]},
             "tls": { "type": "string","enum": ["on","off"]},       
-            "p2p":{ "$ref":"/schemas/corda_service_port_ambassador"},
-            "rpc":{ "$ref":"/schemas/corda_service_port"},
-            "p2padmin":{ "$ref":"/schemas/corda_service_port"},
-            "dbtcp":{ "$ref":"/schemas/corda_service_port"},
-            "dbweb":{ "$ref":"/schemas/corda_service_port"}                                          
+            "p2p":{ "$ref":"#/definitions/corda_service_port_ambassador"},
+            "rpc":{ "$ref":"#/definitions/corda_service_port"},
+            "p2padmin":{ "$ref":"#/definitions/corda_service_port"},
+            "dbtcp":{ "$ref":"#/definitions/corda_service_port"},
+            "dbweb":{ "$ref":"#/definitions/corda_service_port"}                                          
             }
         },  
         "corda_service_peer":{
-          "$id": "/schemas/corda_service_peer",
           "type": "object",
           "properties": {
             "name": { "type": "string"},
@@ -180,17 +168,16 @@
             "db_subject": { "type": "string"},
             "type":{ "type": "string","enum": ["node"]},
             "tls": { "type": "string","enum": ["on","off"]},       
-            "p2p":{ "$ref":"/schemas/corda_service_port_ambassador"},
-            "rpc":{ "$ref":"/schemas/corda_service_port"},
-            "p2padmin":{ "$ref":"/schemas/corda_service_port"},
-            "dbtcp":{ "$ref":"/schemas/corda_service_port"},
-            "dbweb":{ "$ref":"/schemas/corda_service_port"},
-            "springboot":{ "$ref":"/schemas/corda_service_port"},
-            "expressapi":{ "$ref":"/schemas/corda_service_port"}                                                                    
+            "p2p":{ "$ref":"#/definitions/corda_service_port_ambassador"},
+            "rpc":{ "$ref":"#/definitions/corda_service_port"},
+            "p2padmin":{ "$ref":"#/definitions/corda_service_port"},
+            "dbtcp":{ "$ref":"#/definitions/corda_service_port"},
+            "dbweb":{ "$ref":"#/definitions/corda_service_port"},
+            "springboot":{ "$ref":"#/definitions/corda_service_port"},
+            "expressapi":{ "$ref":"#/definitions/corda_service_port"}                                                                    
             }
         },  
         "corda_service_port_doorman":{
-          "$id": "/schemas/corda_service_port_doorman",
           "type": "object",
           "properties": {
             "servicePort": { "type": "number"},
@@ -200,7 +187,6 @@
           "additionalProperties": false
         },               
         "corda_service_port":{
-          "$id": "/schemas/corda_service_port",
           "type": "object",
           "properties": {
             "port": { "type": "number"},
@@ -210,7 +196,6 @@
           "additionalProperties": false
         }, 
         "corda_service_port_ambassador":{
-          "$id": "/schemas/corda_service_port_ambassador",
           "type": "object",
           "properties": {
             "port": { "type": "number"},
