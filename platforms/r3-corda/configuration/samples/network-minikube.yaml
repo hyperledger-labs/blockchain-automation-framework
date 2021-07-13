@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=../../../../platforms/network-schema.json
 # This is a sample configuration file for SupplyChain App on Single K8s Cluster.
 # For multiple K8s clusters, there should be multiple configuration files.
 network:

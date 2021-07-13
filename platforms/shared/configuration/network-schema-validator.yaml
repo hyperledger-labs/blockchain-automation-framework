@@ -7,96 +7,10 @@
     gather_facts: yes
     no_log: "{{ no_ansible_log | default(false) }}"
     tasks: 
-    - name: Validate main network
-      assert:
-        that:  
-          - network is defined
-          - network.type is match('^(fabric|corda|corda-enterprise|indy)$')
-    - name: Validate env section
-      assert:
-        that:  
-          - network.env.type is match('^[A-Za-z0-9-]{1,10}$')
-          - network.env.proxy is match('^(haproxy|ambassador)$')
-          - network.env.retry_count|int > 5
-          - network.env.retry_count|int <=100
-          - network.env.external_dns is match('^(enabled|disabled)$')
-        fail_msg: "schema error in network.env section"          
-    - name: Validate docker section
-      assert:
-        that:  
-          - network.docker.url is match('^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?:\:[0-9]{2,5})?(?:\/[a-z0-9-]{1,61})*$')
-          - network.docker.username is match('^[a-zA-Z0-9._]+$')
-          - network.docker.password is defined          
-        fail_msg: "schema error in network.docker section"        
-    - name: Validate k8s section for all organizations
-      assert:
-        that:  
-          - item.k8s.context is defined
-          - item.k8s.config_file is defined
-        fail_msg: "schema error in k8s section" 
-      with_items: "{{ network.organizations }}" 
-
-    - name: Validate cloud_provider field for all organizations
-      assert:
-        that:  
-          - item.cloud_provider is match('^(aws|gcp|azure)$')
-        fail_msg: "schema error in cloud_provider field" 
-      with_items: "{{ network.organizations }}" 
-
-    - name: Validate aws section for all organizations
-      assert:
-        that:  
-          - item.aws.access_key is defined
-          - item.aws.secret_key is defined
-        fail_msg: "schema error in aws section" 
-      with_items: "{{ network.organizations }}" 
-      when: item.cloud_provider == 'aws'
-
-    - name: Validate vault section for all organizations
-      assert:
-        that:  
-          - item.vault.url is match('^(http|https):\/\/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?:\:[0-9]{2,5})?$')
-          - item.vault.root_token is defined
-          - item.vault.secret_path is defined
-        fail_msg: "schema error in vault section" 
-      with_items: "{{ network.organizations }}"  
-
-    - name: Validate gitops section for all organizations
-      assert:
-        that:  
-          - item.gitops.git_protocol is match('^(https|ssh)$')
-          - item.gitops.git_url is defined
-          - item.gitops.branch is defined
-          - item.gitops.release_dir is defined
-          - item.gitops.chart_source is defined
-          - item.gitops.git_repo is defined
-          - item.gitops.username is defined
-          - item.gitops.password is defined          
-        fail_msg: "schema error in gitops section" 
-      with_items: "{{ network.organizations }}"        
-#######################################
-# corda
-#######################################       
-    - name: Validate corda network_services
-      assert:
-        that:  
-          - item.type is match('^(doorman|networkmap)$')
-          - item.uri is defined
-          - item.certificate is defined
-        fail_msg: "schema error in corda network_services section" 
-      loop: "{{ network.network_services }}"
-      when: network.type == 'corda'
-
-    - name: Validate corda organization specific fields
-      assert:
-        that:  
-          - item.name is match('^[A-Za-z0-9-]{1,30}$')
-          - item.type is match('^[A-Za-z0-9-]{1,30}$')
-          - item.country is defined
-          - item.state is defined
-          - item.location is defined
-          - item.subject is defined
-          - item.external_url_suffix is defined
-        fail_msg: "schema error in corda organization section" 
-      loop: "{{ network.organizations }}"
-      when: network.type == 'corda'      
+    - name: install ajv-cli
+      npm: 
+        name: ajv-cli
+        global: yes
+    - name: "run schema validator on network.yaml"
+      shell: |
+        ajv validate -s ../../network-schema.json -d ../../../build/network.yaml         

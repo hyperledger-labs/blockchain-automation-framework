@@ -16,15 +16,26 @@
              "then": {
               "properties":{
                 "version":{ "type": "number","enum":[4.4,4.7]},
+                "env": { "$ref":"#/definitions/shared_env_ambassador"},
                 "frontend": { "type": "string", "enum": ["enabled","disabled"]},
                 "network_services": { "type":"array","items":{ "$ref":"#/definitions/corda_network_service"}},
                 "organizations": { "type":"array","minItems": 1,"items":{"$ref":"#/definitions/corda_organization"}}      
                }
              }
-            }               
+            }  ,
+            {"if": {"properties": { "type": { "const": "corda-enterprise" } } },
+             "then": {
+              "properties":{
+                "version":{ "type": "number","enum":[4.4,4.7]},
+                "env": { "$ref":"#/definitions/shared_env_ambassador"},
+                "frontend": { "type": "string", "enum": ["enabled","disabled"]},
+                "network_services": { "type":"array","items":{ "$ref":"#/definitions/corda_enterprise_network_service"}},
+                "organizations": { "type":"array","minItems": 1,"items":{"$ref":"#/definitions/corda_enterprise_organization"}}      
+               }
+             }
+            }                         
           ],
           "required": [ "type","version","env","docker","organizations" ]
-          
         }
     },
     "required": [ "network" ] ,
@@ -33,19 +44,45 @@
         "shared_environment":{
             "type": "object",
             "properties": {
-              "type": { "type": "string","pattern": "^[A-Za-z0-9-]{1,10}$"},
-              "proxy": { "type": "string", "enum": ["haproxy", "ambassador"]},           
-              "retry_count": {"type": "integer", "minimum":5,"maximum":100}, 
-              "external_dns": { "type": "string", "enum": ["enabled", "disabled"]}
+              "type": { "type": "string","pattern": "^[A-Za-z0-9-]{1,10}$", "description": "Environment type. Can be like dev/test/prod."},
+              "proxy": { "type": "string", "enum": ["haproxy", "ambassador"], "description": "Choice of the Cluster Ingress controller"},           
+              "retry_count": {"type": "integer", "minimum":5,"maximum":100,"description": "Retry count for the checks. Use a large number if your kubernetes cluster is slow."}, 
+              "external_dns": { "type": "string", "enum": ["enabled", "disabled"], "description": "If the cluster has the external DNS service, this has to be set enabled so that the hosted zone is automatically updated."}
               },
             "required": [ "type","proxy","external_dns","retry_count" ]
-        },             
+        },    
+        "shared_env_ambassador":{
+          "type": "object",
+          "properties": {
+            "type": { "type": "string","pattern": "^[A-Za-z0-9-]{1,10}$","description": "Environment type. Can be like dev/test/prod."},
+            "proxy": { "type": "string", "enum": ["ambassador"],"description": "Choice of the Cluster Ingress controller"},    
+            "ambassadorPorts":{"$ref":"#/definitions/shared_env_ambassadorPorts", "description": "Any additional Ambassador ports can be given here."},  
+            "loadBalancerSourceRanges":{"description": "estrict inbound access to a single or list of IP adresses for the public Ambassador ports to enhance BAF network security"},     
+            "retry_count": {"type": "integer", "minimum":5,"maximum":100,"description": "Retry count for the checks. Use a large number if your kubernetes cluster is slow."}, 
+            "external_dns": { "type": "string", "enum": ["enabled", "disabled"], "description": "If the cluster has the external DNS service, this has to be set enabled so that the hosted zone is automatically updated."}
+            },
+          "required": [ "type","proxy","external_dns","retry_count","ambassadorPorts" ],
+          "additionalProperties": false
+        },   
+        "shared_env_ambassadorPorts":{
+          "type": "object",
+          "properties": {
+            "ports": { "type":"string","pattern":"^\\d{1,5}(?:,\\d{1,5})*$"},
+            "portRange": { "type": "object", 
+              "properties":{
+                "from":{ "type": "integer"},
+                "to":{ "type": "integer"}},
+              "additionalProperties": false
+              }
+          }, 
+          "additionalProperties": false
+        },                         
         "shared_docker":{
             "type": "object",
             "properties": {
-              "url": { "type": "string","pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?:\\:[0-9]{2,5})?(?:\/[a-z0-9-]{1,61})*$"},
-              "username": { "type": "string","pattern":"^[a-zA-Z0-9._]+$"},
-              "password": {"type": "string"}
+              "url": { "type": "string","pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?::[0-9]{2,5})?(?:\\/[a-z0-9-]{1,61})*$", "description": "Docker registry url. Must be private registry for Corda Enterprise"},
+              "username": { "type": "string","pattern":"^[a-zA-Z0-9._]+$","description": "Username credential required for login."},
+              "password": {"type": "string","description": "Password credential required for login."}
              },
             "required": [ "url","username","password"]
         },                                 
@@ -54,8 +91,8 @@
           "properties": {
             "provider": { "type": "string","enum": ["aws", "azure","gcp","minikube"]},
             "region": { "type": "string"},
-            "context":{ "type": "string"},
-            "config_file":{ "type": "string"}
+            "context":{ "type": "string","description": "Context/Name of the cluster where the organization entities should be deployed"},
+            "config_file":{ "type": "string","description": "Path to the kubernetes cluster configuration file"}
            },
           "required": [ "context","config_file"],
           "additionalProperties": false
@@ -63,8 +100,8 @@
         "shared_aws":{
           "type": "object",
           "properties": {
-            "access_key": { "type": "string","pattern": "^[A-Za-z0-9]{20}$"},
-            "secret_key": { "type": "string","pattern": "^[A-Za-z0-9/]{40}$"},
+            "access_key": { "type": "string","pattern": "^[A-Za-z0-9]{20}$", "description": "AWS Access key"},
+            "secret_key": { "type": "string","pattern": "^[A-Za-z0-9/]{40}$", "description": "AWS Secret key"},
             "region": { "type": "string"},
             "zone":{ "type": "string"}
            },
@@ -84,47 +121,154 @@
         "shared_gitops":{
           "type": "object",
           "properties": {
-            "git_protocol": { "type": "string","enum": ["https", "ssh"]},
-            "git_url": { "type": "string"}, 
-            "branch": { "type": "string"}, 
-            "release_dir": { "type": "string"}, 
-            "chart_source":{ "type": "string"}, 
+            "git_protocol": { "type": "string","enum": ["https", "ssh"], "description": "Option for git over https or ssh."},
+            "git_url": { "type": "string","description": "SSH or HTTPs url of the repository where flux should be synced."}, 
+            "branch": { "type": "string","description": "Branch of the repository where the Helm Charts and value files are stored"}, 
+            "release_dir": { "type": "string","pattern":"(^[A-Za-z0-9]+)(/[A-Za-z0-9-]+)*([A-Za-z0-9])$","description": "Relative path where flux should sync files."}, 
+            "chart_source":{ "type": "string","pattern":"(^[A-Za-z0-9]+)(/[A-Za-z0-9-]+)*([A-Za-z0-9])$","description": "Relative path where the helm charts are stored"}, 
             "git_repo": { "type": "string"}, 
-            "username": { "type": "string"}, 
-            "password": { "type": "string"}, 
-            "private_key": { "type": "string"},  
-            "email": { "type": "string"}                
+            "username": { "type": "string","description": "Username which has access rights to read/write on repository"}, 
+            "password": { "type": "string", "description": "Password of the user which has access rights to read/write on repository (Optional for ssh; Required for https)"}, 
+            "private_key": { "type": "string","description": "Path to the private key file which has write-access to the git repo (Optional for https; Required for ssh)"},  
+            "email": { "type": "string","pattern":"^\\S+@\\S+\\.\\S+$","description": "Email of the user to be used in git config"}                
            },
           "required": [ "git_protocol","git_url","branch","release_dir","chart_source","git_repo","username","password","private_key","email"],
           "additionalProperties": false
         }, 
-        "corda_network_service":{
+        "shared_organization":{
           "type": "object",
           "properties": {
-            "type": { "type": "string", "enum": ["doorman", "networkmap"]},   
-            "uri": { "type": "string"},
-            "certificate": { "type": "string"}
-           },
-          "required": [ "type","uri","certificate"]
-        },         
-        "corda_organization":{
-          "type": "object",
-          "properties": {
+            "organization":{  "description": "deprecated."},
             "k8s":{ "$ref":"#/definitions/shared_k8s"},
             "vault":{ "$ref":"#/definitions/shared_vault"},
             "gitops":{ "$ref":"#/definitions/shared_gitops"},
-            "aws":{ "$ref":"#/definitions/shared_aws"},
-            "name": { "type": "string","pattern": "^[A-Za-z0-9-]{1,30}$"},
-            "type": { "type": "string","pattern": "^[A-Za-z0-9-]{1,30}$"},
+            "cloud_provider":{ "type": "string","enum": ["aws", "azure","gcp","minikube"]},
+            "gcp":{},
+            "azure":{},
+            "minikube":{},
+            "name": { "type": "string","pattern": "^[A-Za-z0-9-]{1,30}$"}
+            },  
+          "allOf":[{
+            "if": {"properties": { "cloud_provider": { "const": "aws" } } },"then":{
+              "properties": {
+                "aws":{ "$ref":"#/definitions/shared_aws"}
+              },
+              "required": [ "aws"]
+            }}
+          ],     
+          "required": [ "name","cloud_provider","k8s","vault","gitops"]
+        },         
+        "corda_network_service":{
+          "type": "object",
+          "properties": {
+            "service":{  "description": "deprecated."},
+            "type": { "type": "string", "enum": ["doorman", "networkmap"]},   
+            "uri": { "type": "string","pattern": "^https:\/\/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?::[0-9]{2,5})?$"},
+            "certificate": { "type": "string", "description": "Absolute path to the public certificates"}
+           },
+          "required": [ "type","uri","certificate"],
+          "additionalProperties": false
+        },    
+        "corda_enterprise_network_service":{
+          "type": "object",
+          "properties": {
+            "service":{  "description": "deprecated"},
+            "type": { "type": "string", "enum": ["idman", "networkmap"]},  
+            "name": { "type": "string","pattern": "^[A-Za-z0-9-]{1,30}$","description": "Name of the service"},
+            "uri": { "type": "string","pattern": "^https:\/\/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9](?::[0-9]{2,5})?$","description": "External URL. This should be reachable from all nodes."},
+            "certificate": { "type": "string","description": "Absolute path to the public certificates"},
+            "crlissuer_subject": { "type": "string", "description": "Subject of the CRL Issuer."},
+            "truststore": { "type": "string","description": "Absolute path to the base64 encoded networkroot truststore."},
+            "truststore_pass": { "type": "string", "description": "Truststore password"}
+           },
+          "required": [ "type","uri","certificate","name"],
+          "additionalProperties": false
+        },  
+        "corda_organization":{
+          "type": "object",
+          "allOf":[{ "$ref":"#/definitions/shared_organization"}],
+          "properties": {
+            "type": { "type": "string","enum": ["doorman-nms-notary","node","cenm"]},
             "country": { "type": "string"},
             "state": { "type": "string"},
             "location": { "type": "string"}, 
-            "subject":  { "type": "string"},    
-            "external_url_suffix":  { "type": "string"},
-            "services":{ "$ref":"#/definitions/corda_node_service"}
-            },
-          "required": [ "name","type","country","state","location","subject","external_url_suffix","services"]
+            "subject":  { "type": "string","description":"Subject format can be referred at OpenSSL Subject"},    
+            "external_url_suffix":  { "type": "string","description":"Public url suffix of the cluster. This is the configured path for the Ambassador Service on the DNS provider."},
+            "services":{ "$ref":"#/definitions/corda_node_service"},
+            "cordapps":{ "$ref":"#/definitions/corda_cordapp"}
+            },         
+          "required": [ "type","country","state","location","subject","external_url_suffix","services"]
         },  
+        "corda_enterprise_organization":{
+          "type": "object",
+          "allOf":[{ "$ref":"#/definitions/shared_organization"},
+                    { "$ref":"#/definitions/corda_organization"}],
+          "properties": {
+            "subordinate_ca_subject": { "type": "string","description":"Subordinate CA Subject for the CENM."},
+            "firewall": { }
+            },    
+          "if": {"properties": { "type": { "const": "cenm" } } },"then":{
+            "properties": {
+              "version": { "type": "number","enum": [1.5]},
+              "credentials":  { "$ref":"#/definitions/corda_credentials_cenm"}}
+          },"else":{
+            "properties": {
+              "version": { "type": "number","enum": [4.7]},
+              "credentials":  { "$ref":"#/definitions/corda_credentials_node"}}
+          },     
+          "required": [ "version"]
+        },  
+        "corda_cordapp":{
+          "type": "object",
+          "properties": {
+            "username": { "type":"string"},
+            "password": { "type":"string"},
+            "jars": { "type":"array","items":{ "type": "object", "required":["jar"],"additionalProperties": false,"properties":{
+                  "jar":{ "type": "object", "required":["url"],"additionalProperties": false,"properties":{
+                      "url":{"type":"string"}
+               }}}}
+            }},
+           "required": [ "username","password","jars"],
+           "additionalProperties": false
+        },          
+        "corda_credentials_cenm":{
+          "type": "object",
+          "properties": {
+            "keystore": { "type":"object","properties":{
+                "keystore": { "type": "string"},
+                "idman": { "type": "string"},
+                "networkmap": { "type": "string"},
+                "subordinateca": { "type": "string"},
+                "rootca": { "type": "string"},
+                "tlscrlsigner": { "type": "string"}
+              },"required": [ "keystore","idman","networkmap","subordinateca","rootca","tlscrlsigner"], "additionalProperties": false
+            },
+            "truststore": { "type":"object","properties":{
+                "truststore": { "type": "string"},
+                "rootca": { "type": "string"},
+                "ssl": { "type": "string"}
+              },"required": [ "truststore","rootca","ssl"], "additionalProperties": false
+            },
+            "ssl": { "type":"object","properties":{
+                "networkmap": { "type": "string"},
+                "idman": { "type": "string"},
+                "signer": { "type": "string"},
+                "root": { "type": "string"}
+             },"required": [ "networkmap","idman","signer","root"], "additionalProperties": false
+            }          
+            },
+          "required": [ "keystore","truststore","ssl"], 
+          "additionalProperties": false  
+        },  
+        "corda_credentials_node":{
+          "type": "object",
+          "properties": {
+              "truststore": { "type": "string"},
+              "keystore": { "type": "string"}
+          },
+          "required": [ "truststore","keystore"], 
+          "additionalProperties": false
+        },                     
         "corda_node_service":{
           "type": "object",
           "properties": {
